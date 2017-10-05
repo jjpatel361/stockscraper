@@ -8,5 +8,5 @@ public class CssSelectors {
 	public static final String STOCK_PRICE_CHANGE_PERCENT = ".id-price-change span.ch.bld>span:last-child";
 	public static final String STOCK_CURRENCY = ".mdata-dis>div";
 	public static final String STOCK_HISTORICAL_TABLE = ".historical_price tr";
-	
+	public static final String CURRENCY_CONVERTER = "#currency_converter_result .bld";
 }

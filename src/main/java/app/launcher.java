@@ -19,6 +19,10 @@ public class launcher {
 		
 		System.out.println(stockInfo.toString());*/
 		
+		double multipler = CurrencyConverter.getExchangeRate(ExchangeCurrency.USD, ExchangeCurrency.INR);
+		System.out.println(multipler);
+		
+		
 	}
 
 }
