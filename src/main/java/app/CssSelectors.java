@@ -7,7 +7,6 @@ public class CssSelectors {
 	public static final String STOCK_PRICE_CHANGE_VALUE = ".id-price-change span.ch.bld>span:first-child";
 	public static final String STOCK_PRICE_CHANGE_PERCENT = ".id-price-change span.ch.bld>span:last-child";
 	public static final String STOCK_CURRENCY = ".mdata-dis>div";
-	
-	
+	public static final String STOCK_HISTORICAL_TABLE = ".historical_price tr";
 	
 }

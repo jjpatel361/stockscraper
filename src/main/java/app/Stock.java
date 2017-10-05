@@ -11,5 +11,14 @@ public class Stock {
 	public double changePercent;
 	public double changeValue;
 	
+	@Override
+	public String toString() {
+		
+		return "Name: " + this.name 
+				+ "\nActual Price : " + this.actualPrice 
+				+ "\nChange Percent : " + this.changePercent;
+	}
+	
+	
 		
 }

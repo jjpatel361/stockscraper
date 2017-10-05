@@ -1,11 +1,17 @@
 package app;
 
-import java.nio.channels.IllegalSelectorException;
+import java.io.UnsupportedEncodingException;
+import java.net.URLEncoder;
+import java.text.ParseException;
+import java.text.SimpleDateFormat;
+import java.util.Date;
+import java.util.HashMap;
 import java.util.List;
 
 import org.jsoup.Jsoup;
 import org.jsoup.nodes.Document;
 import org.jsoup.nodes.Element;
+import org.jsoup.select.Elements;
 
 /*
  * @author jay.patel
@@ -14,18 +20,17 @@ import org.jsoup.nodes.Element;
  * */
 public class StockSelector {
 	
-	private String _stockTicker;
+	
 	private static final String API_ENDPOINT = "https://finance.google.com/finance?q=";
-	public Document htmlDocument;
+	private static final String HISTORICAL_API_ENDPOINT = "http://finance.google.com/finance/historical?";
+	private Document htmlDocument;
 	
-	
-	public StockSelector() {
+		public StockSelector() {
 		
 	}
 	
 	
 	public Stock getStock(String stockTicker) {
-		_stockTicker = stockTicker;
 		Stock company = new Stock();
 		String url = getEndpointURL(stockTicker);
 		htmlDocument = fetchHTMLDocument(url);
@@ -41,7 +46,7 @@ public class StockSelector {
 		return company;
 	}
 	
-	public double getActualPrice() {
+	private double getActualPrice() {
 		List<Element> elems = htmlDocument.select(CssSelectors.STOCK_ACTUAL_PRICE);
 		if(!elems.isEmpty()) {
 			String price_str = elems.get(0).text().replaceAll(",", "");
@@ -51,7 +56,7 @@ public class StockSelector {
 		return -1;
 	}
 	
-	public double getChangeValue() throws Exception {
+	private double getChangeValue() throws Exception {
 		List<Element> elems = htmlDocument.select(CssSelectors.STOCK_PRICE_CHANGE_VALUE);
 		if(!elems.isEmpty()) {
 			String price_str = elems.get(0).text().replaceAll(",", "");
@@ -62,7 +67,7 @@ public class StockSelector {
 		}
 	}
 	
-	public double getChangePercent() throws Exception {
+	private double getChangePercent() throws Exception {
 		List<Element> elems = htmlDocument.select(CssSelectors.STOCK_PRICE_CHANGE_PERCENT);
 		if(!elems.isEmpty()) {
 			String price_str = elems.get(0).text().replace("(", "").replace(")","").replace("%","");
@@ -73,7 +78,7 @@ public class StockSelector {
 		}
 	}
 	
-	public String getStockName() {
+	private String getStockName() {
 		List<Element> elems = htmlDocument.getElementsByClass(CssSelectors.STOCK_NAME);
 		if(!elems.isEmpty()) {
 			String name = elems.get(0).text();
@@ -100,9 +105,103 @@ public class StockSelector {
 	}
 
 
+	@SuppressWarnings("unused")
 	private String getCurrency() {
 		return "";
 	}
+
+
+	public OHLC getHistoricalOHLC(String symbol, Date dt) {
+		String url;
+		try {
+			url = getHistoricalURL(symbol, dt);
+			Document doc = Jsoup.connect(url)
+					.header("User-Agent", "Mozilla/5.0 (Windows NT 10.0; WOW64; rv:55.0) Gecko/20100101 Firefox/55.0")
+					.get();
+			
+			HashMap<String, String> contents = getTableContents(doc);
+			
+			OHLC parsedData = getOHLC(contents);
+			
+			return parsedData;
+		} catch (Exception e) {
+			e.printStackTrace();
+		}
+		return null;
+		
+	}
 	
+	private OHLC getOHLC(HashMap<String, String> contents) {
+		OHLC stockData = new OHLC();
+		
+		stockData.open = sanitizeNumber(contents.get("open"));
+		stockData.high = sanitizeNumber(contents.get("high"));
+		stockData.low = sanitizeNumber(contents.get("low"));
+		stockData.close = sanitizeNumber(contents.get("close"));
+		stockData.volume = sanitizeNumber(contents.get("volume"));
+		stockData.dt = sanitizeDate(contents.get("date"));
+		
+		return stockData;
+	}
+
+
+	/**
+	 * @param strDate : MMM DD, YYYY format date e.g. Sep 01, 2017
+	 * @return Date dt java.util.Date object
+	 */
+	private Date sanitizeDate(String strDate) {
+		System.out.println(strDate);
+		try {
+			SimpleDateFormat sdf = new SimpleDateFormat("MMM DD, YYYY");
+			Date dt = sdf.parse(strDate);
+			return dt;
+		} catch (ParseException e) {
+			e.printStackTrace();
+		}
+		return null;
+	}
+
+
+	private double sanitizeNumber(String doubleValueAsString) {
+		double d = Double.parseDouble(doubleValueAsString.replace(",", ""));
+		return d;
+	}
+
+
+	private HashMap<String, String> getTableContents(Document doc) {
+		 HashMap<String, String> ohlcValues = new HashMap<String, String>();
+		 Elements el = doc.select(CssSelectors.STOCK_HISTORICAL_TABLE);
+		 for (Element element : el) {
+			 // Ignore the table header and table footer
+			if(!element.hasClass("bb") || element.hasClass("tptr")) {
+				
+				Elements tdElements = element.getElementsByTag("td");
+				String dt = tdElements.get(0).text();
+				String open = tdElements.get(1).text();
+				String high = tdElements.get(2).text();
+				String low = tdElements.get(3).text();
+				String close = tdElements.get(4).text();
+				String volume = tdElements.get(5).text();
+				
+				ohlcValues.put("open", open);
+				ohlcValues.put("high", high);
+				ohlcValues.put("low", low);
+				ohlcValues.put("close", close);
+				ohlcValues.put("volume", volume);
+				ohlcValues.put("date", dt);
+			};
+		}
+		return ohlcValues;
+	}
+
+
+	public String getHistoricalURL(String symbol, Date dt) throws UnsupportedEncodingException{
+		SimpleDateFormat sdf = new SimpleDateFormat("MMM dd, yyyy");
+		String formated_date = sdf.format(dt);
+		String queryparams = "q=" + symbol + "&";
+		queryparams += "startdate=" + URLEncoder.encode(formated_date,"UTF-8") +"&";
+		queryparams += "enddate=" + URLEncoder.encode(formated_date,"UTF-8");
+		return HISTORICAL_API_ENDPOINT + queryparams.replace("+", "%20");
+	}
 
 }
