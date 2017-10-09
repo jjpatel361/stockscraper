@@ -33,7 +33,7 @@ public class StockSelector {
 	public Stock getStock(String stockTicker) {
 		Stock company = new Stock();
 		String url = getEndpointURL(stockTicker);
-		htmlDocument = fetchHTMLDocument(url);
+		htmlDocument = WebConnector.fetchHTMLDocument(url);
 		company.name = getStockName();
 		company.actualPrice = getActualPrice();
 		try {

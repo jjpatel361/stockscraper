@@ -29,14 +29,13 @@ public class CurrencyConverter {
 	 */
 	public static double getExchangeRate(String from, String to) throws IOException {
 		String url = generateURL(from, to);
-		Document d = Jsoup.connect(url).get();
+		Document d = WebConnector.fetchHTMLDocument(url);
 		double mul = getMultiplier(d);
 		return mul;
 	}
 	private static double getMultiplier(Document d) {
 		Elements eleList = d.select(CssSelectors.CURRENCY_CONVERTER);
 		String multiplier_str  = eleList.get(0).text().replace(",", "");
-		//TODO : Handle , 
 		String cleaned_str = multiplier_str.replaceAll("[^\\d.]", "");
 		return Double.parseDouble(cleaned_str);
 	}
